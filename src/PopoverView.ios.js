@@ -1,8 +1,8 @@
-import React from 'react';
-import { NativeModules, UIManager, StyleSheet, requireNativeComponent, findNodeHandle, processColor, View } from 'react-native';
 import Proptypes from 'prop-types';
-
+import React from 'react';
+import { findNodeHandle, NativeModules, processColor, requireNativeComponent, StyleSheet, UIManager, View } from 'react-native';
 import * as Helpers from './functions/helpers';
+
 
 
 const componentName   = "RCTPopoverView";
@@ -65,29 +65,32 @@ export class PopoverView extends React.PureComponent {
   //#region - Public Methods
   /** show or hide the popover */
   setVisibility = async (visibility) => {
+    const prevVisibility = await this.getVisibility();
     const { lazyPopover } = this.props;
 
-    try {
-      if(visibility){
-        await Promise.all([
-          Helpers.setStateAsync(this, {mountPopover: true}),
-          // temp bugfix: wait for popover to mount
-          lazyPopover && Helpers.timeout(50)
-        ]);
+    if (visibility !== prevVisibility) {
+      try {
+        if (visibility) {
+          await Promise.all([
+            Helpers.setStateAsync(this, {mountPopover: true}),
+            // temp bugfix: wait for popover to mount
+            lazyPopover && Helpers.timeout(50)
+          ]);
+        };
+
+        await PopoverModule[MODULE_COMMAND_KEYS.setVisibility](
+          findNodeHandle(this.nativeRef),
+          visibility
+        );
+
+      } catch (error) {
+        if(__DEV__){
+          console.warn("PopoverView, setVisibility", error);
+        };
+
+        throw error;
       };
-
-      await PopoverModule[MODULE_COMMAND_KEYS.setVisibility](
-        findNodeHandle(this.nativeRef),
-        visibility
-      );
-
-    } catch(error){
-      if(__DEV__){
-        console.warn("PopoverView, setVisibility", error);
-      };
-
-      throw error;
-    };
+    }
   };
 
   /** toggle the popover visibility */
